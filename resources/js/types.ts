@@ -3,6 +3,10 @@ export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 export type UserRole = 'ADMIN' | 'USER';
 export type WalletType = 'CASH' | 'BANK' | 'E-WALLET';
 
+export type BudgetFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+export type DebtType = 'BILL' | 'DEBT' | 'RECEIVABLE';
+
+
 export enum AppView {
   DASHBOARD = 'DASHBOARD',
   TRANSACTIONS = 'TRANSACTIONS',
@@ -26,12 +30,14 @@ export enum AppView {
 
 export interface Transaction {
   id: string;
-  date: string; // ISO String YYYY-MM-DD
+  userId: string;
+  date: string; // YYYY-MM-DD
   description: string;
   amount: number;
   type: TransactionType;
   category: string;
-  walletId?: string; // Optional if not using Wallet feature yet
+  walletId: string;
+  toWalletId?: string; // khusus TRANSFER
 }
 
 export interface SummaryStats {
@@ -73,6 +79,8 @@ export type Goal = FinancialGoal;
 // --- FEATURES ---
 
 export interface CategoryBudget {
+  id: string;                 // <-- tambah, dipakai di FinanceApp
+  userId?: string;            // opsional (biar kompatibel saat nanti pakai auth)
   category: string;
   limit: number;
   spent: number;
@@ -89,13 +97,14 @@ export interface Asset {
 
 export interface Debt {
   id: string;
-  name: string;
+  userId: string;
+  person: string;
   amount: number;
-  remainingAmount: number;
-  dueDate: string;
-  interestRate?: number;
+  remainingAmount?: number; // Added to track remaining debt
+  dueDate: string; // YYYY-MM-DD
   description?: string;
-  type: 'PAYABLE' | 'RECEIVABLE'; // <--- TAMBAHAN PENTING (Hutang vs Piutang)
+  type: DebtType;
+  isPaid: boolean;
 }
 
 export interface Notification {
@@ -145,4 +154,13 @@ export interface AdminLog {
   action: string;
   target: string;
   details: string;
+}
+
+export interface Budget {
+  id: string;
+  userId: string;
+  category: string;
+  limit: number;
+  period: string; // contoh: "2026-02" (YYYY-MM)
+  frequency: BudgetFrequency;
 }
