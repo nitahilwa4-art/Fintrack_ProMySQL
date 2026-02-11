@@ -258,7 +258,17 @@ const FinanceApp: React.FC = () => {
           />
         );
       case AppView.TRANSACTIONS:
-        return <TransactionList transactions={transactions} onDelete={(id) => setTransactions(prev => prev.filter(t => t.id !== id))} onAdd={(t) => addTransaction(t)} />;
+        return (
+              <TransactionList 
+                transactions={transactions} 
+                wallets={wallets}           // <-- Tambahkan ini
+                categories={categories}     // <-- Tambahkan ini
+                onDelete={(id) => setTransactions(prev => prev.filter(t => t.id !== id))} 
+                onEdit={(updatedTrans) => { // <-- Tambahkan ini agar fungsi edit jalan
+                  setTransactions(prev => prev.map(t => t.id === updatedTrans.id ? updatedTrans : t));
+                }}
+              />
+            );
       case AppView.SMART_ENTRY:
         return <SmartEntry onAddTransactions={addSmartTransactions} onDone={() => setCurrentView(AppView.TRANSACTIONS)} />;
       case AppView.INSIGHTS:

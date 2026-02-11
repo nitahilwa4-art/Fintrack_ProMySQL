@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction, SummaryStats, Wallet, Budget, TransactionType, Debt, Category } from '@/types';
-import { TrendingUp, TrendingDown, Wallet as WalletIcon, Calendar, AlertCircle, Plus, Sparkles, PieChart as PieChartIcon, BarChart3, Receipt, History, Clock, ArrowRight, ArrowRightLeft, Filter } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet as WalletIcon, Calendar, AlertCircle, Plus, Sparkles, PieChart as PieChartIcon, BarChart3, Receipt, History, Clock, ArrowRight, Filter } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend
 } from 'recharts';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
+import Modal from '@/Components/Modal'; // <--- 1. WAJIB IMPORT INI
 
 interface DashboardProps {
   transactions: Transaction[];
@@ -42,7 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Transaction Form State
   const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState(''); // Kept as string for formatting
+  const [amount, setAmount] = useState(''); 
   const [type, setType] = useState<TransactionType>('EXPENSE');
   const [category, setCategory] = useState('');
   const [walletId, setWalletId] = useState(wallets[0]?.id || '');
@@ -63,13 +64,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   type FilterType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY' | 'CUSTOM';
 
   const [activeFilter, setActiveFilter] = useState<FilterType>('DAILY');
-  // trendMode determines how data is grouped (aggregated)
   const [trendMode, setTrendMode] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY'>('DAILY');
   const [trendStartDate, setTrendStartDate] = useState(activeDateRange.start);
   const [trendEndDate, setTrendEndDate] = useState(activeDateRange.end);
   const [trendCategory, setTrendCategory] = useState<string>('ALL');
 
-  // Initialize trend dates based on default view and activeDateRange updates
   useEffect(() => {
     if (activeFilter === 'DAILY') {
       setTrendStartDate(activeDateRange.start);
@@ -95,9 +94,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     return val.toString();
   };
 
-  // Helper for money input formatting
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    const rawValue = e.target.value.replace(/\D/g, '');
     if (!rawValue) {
       setAmount('');
       return;
@@ -106,19 +104,16 @@ const Dashboard: React.FC<DashboardProps> = ({
     setAmount(formatted);
   };
 
-  // Helper to parse formatted amount back to number
   const parseAmount = (val: string) => {
     return parseFloat(val.replace(/\./g, '')) || 0;
   };
 
   // --- CHART DATA CALCULATION ---
-
   const trendData = useMemo(() => {
     const start = new Date(trendStartDate);
     const end = new Date(trendEndDate);
     const data = [];
 
-    // Helper to filter transactions in a specific date range [s, e]
     const sumInRange = (s: Date, e: Date) => {
       const sStr = getLocalDateString(s);
       const eStr = getLocalDateString(e);
@@ -136,40 +131,31 @@ const Dashboard: React.FC<DashboardProps> = ({
     };
 
     if (trendMode === 'DAILY') {
-      // Loop daily
       for (let d = new Date(start.getTime()); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
         const dayKey = getLocalDateString(d);
         const dayLabel = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-
         const sums = sumInRange(d, d);
         data.push({ name: dayLabel, fullDate: dayKey, Pemasukan: sums.income, Pengeluaran: sums.expense });
       }
-    }
-    else if (trendMode === 'WEEKLY') {
-      // Align start to the nearest Monday or just use chunks of 7 days
+    } else if (trendMode === 'WEEKLY') {
       let current = new Date(start.getTime());
-      // Let's do calendar weeks logic:
       const day = current.getDay();
       const diff = current.getDate() - day + (day === 0 ? -6 : 1);
-      current.setDate(diff); // Set to Monday
+      current.setDate(diff); 
 
       while (current.getTime() <= end.getTime()) {
         const weekStart = new Date(current.getTime());
         const weekEnd = new Date(current.getTime());
         weekEnd.setDate(weekEnd.getDate() + 6);
 
-        // Only add if there is some overlap with the selected range
         if (weekEnd.getTime() >= start.getTime()) {
           const label = `${weekStart.getDate()} ${weekStart.toLocaleDateString('id-ID', { month: 'short' })}`;
           const sums = sumInRange(weekStart, weekEnd);
           data.push({ name: label, Pemasukan: sums.income, Pengeluaran: sums.expense });
         }
-
         current.setDate(current.getDate() + 7);
       }
-    }
-    else if (trendMode === 'MONTHLY') {
-      // Align to 1st of month
+    } else if (trendMode === 'MONTHLY') {
       let current = new Date(start.getFullYear(), start.getMonth(), 1);
       const endDateObj = new Date(end.getTime());
 
@@ -177,7 +163,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
         const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
 
-        // Check overlap
         if (monthEnd.getTime() >= start.getTime()) {
           const label = current.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
           const sums = sumInRange(monthStart, monthEnd);
@@ -186,11 +171,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         current.setMonth(current.getMonth() + 1);
       }
     }
-
     return data;
   }, [transactions, trendStartDate, trendEndDate, trendMode, trendCategory]);
 
-  // 2. Category Data
   const categoryData = useMemo(() => {
     const expenseMap = transactions
       .filter(t => {
@@ -210,8 +193,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   }, [transactions, pieStartDate, pieEndDate]);
 
   const PIE_COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#64748b'];
-
-  // --- NEW FEATURES CALCULATIONS ---
 
   const cycleStats = useMemo(() => {
     const filtered = transactions.filter(t => t.date >= activeDateRange.start && t.date <= activeDateRange.end);
@@ -258,10 +239,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     return debts
       .filter(d => {
-        // Sesuai types.ts: PAYABLE/RECEIVABLE
         if (d.type !== 'RECEIVABLE') return false;
-
-        // “Belum lunas” pakai remainingAmount
         if ((d.remainingAmount ?? 0) <= 0) return false
         const due = new Date(d.dueDate);
         return due.getTime() >= today.getTime() && due.getTime() <= nextWeek.getTime();
@@ -279,26 +257,20 @@ const Dashboard: React.FC<DashboardProps> = ({
     let start = new Date();
 
     if (filter === 'DAILY') {
-      // Default: Current Month
       start = new Date(end.getFullYear(), end.getMonth(), 1);
       setTrendMode('DAILY');
     } else if (filter === 'WEEKLY') {
-      // Default: Last 3 Months
       start.setMonth(end.getMonth() - 3);
       setTrendMode('WEEKLY');
     } else if (filter === 'MONTHLY') {
-      // Default: This Year
       start = new Date(end.getFullYear(), 0, 1);
       setTrendMode('MONTHLY');
     } else if (filter === 'YEARLY') {
-      // Default: Last 5 Years
       start.setFullYear(end.getFullYear() - 5);
       start.setMonth(0, 1);
-      setTrendMode('MONTHLY'); // Use Monthly bars for Yearly view, or could be 'YEARLY' if we added that mode
+      setTrendMode('MONTHLY');
     } else if (filter === 'CUSTOM') {
-      // Keep current dates, default to daily unless range is huge
       setTrendMode('DAILY');
-      // Don't change dates
       return;
     }
 
@@ -309,9 +281,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const handleDateChange = (field: 'start' | 'end', value: string) => {
     if (field === 'start') setTrendStartDate(value);
     else setTrendEndDate(value);
-
     setActiveFilter('CUSTOM');
-    // Intelligent granularity switch? For now stick to Daily for custom precision
     setTrendMode('DAILY');
   };
 
@@ -350,7 +320,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Quick Action Bar (Floating Style) */}
+      {/* Quick Action Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in-up" style={{ animationDelay: '0ms' }}>
         <div>
           <div className="flex items-center gap-2">
@@ -378,9 +348,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Stats Cards ... (Keep existing code) */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* ... existing cards ... */}
         {/* Card 1 */}
         <div className="bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-700 p-8 rounded-[2rem] shadow-xl shadow-indigo-500/20 text-white relative overflow-hidden group transition-all duration-500 hover:scale-[1.03] animate-pop-in" style={{ animationDelay: '100ms' }}>
           <div className="absolute top-0 right-0 p-8 opacity-10 transform group-hover:scale-110 transition-transform duration-700">
@@ -437,11 +406,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* ... Charts ... (Same as before) */}
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto lg:h-[500px]">
         {/* Trend Bar Chart */}
         <div className="lg:col-span-2 glass-card p-6 lg:p-8 rounded-[2rem] flex flex-col transition-all hover:shadow-lg duration-500 animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-          {/* ... chart content ... */}
           <div className="flex flex-col justify-between mb-6 gap-4">
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -453,7 +421,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Pemasukan vs Pengeluaran</p>
                 </div>
               </div>
-              {/* Filters */}
               <div className="flex flex-wrap gap-2 items-center">
                 <div className="relative">
                   <select
@@ -533,7 +500,6 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Category Pie Chart */}
         <div className="glass-card p-6 lg:p-8 rounded-[2rem] flex flex-col transition-all hover:shadow-lg duration-500 animate-fade-in-up" style={{ animationDelay: '500ms' }}>
-          {/* ... content ... */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-pink-50 dark:bg-slate-800 text-pink-600 dark:text-pink-400 rounded-xl">
@@ -586,9 +552,8 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Widgets Section ... */}
+      {/* Widgets Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ... widgets ... */}
         {/* Budget Watch */}
         <div className="glass-card p-6 rounded-[2rem] flex flex-col h-full transition-all hover:shadow-lg duration-500 animate-fade-in-up" style={{ animationDelay: '600ms' }}>
           <div className="flex items-center gap-3 mb-6">
@@ -701,138 +666,112 @@ const Dashboard: React.FC<DashboardProps> = ({
         </div>
       </div>
 
-      {/* Modern Add Modal with Spring Animation */}
-      {/* Modern Add Modal - REVISI TOTAL (FULL) */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 sm:p-6" style={{ zIndex: 999 }}>
+      {/* Modern Add Modal - SUDAH DIPERBAIKI MENGGUNAKAN KOMPONEN MODAL */}
+      <Modal show={isAddModalOpen} onClose={() => setIsAddModalOpen(false)}>
+        {/* Konten Form Tetap Cantik, Tapi Dibungkus Modal yang Benar */}
+        <div className="relative">
+          
+          {/* Hiasan Header Gradient */}
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 z-30"></div>
 
-          {/* 1. LAYER BACKDROP (Tetap Blur tapi Lebih Halus) */}
-          {/* Menggunakan backdrop-blur-md agar lebih soft, bg-slate-950/60 agar tetap elegan */}
-          <div
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-md transition-opacity duration-500"
-            onClick={() => setIsAddModalOpen(false)}
-          ></div>
+          {/* Header Judul */}
+          <div className="p-6 pb-2 shrink-0 relative z-20 text-center mt-2">
+            <h3 className="text-xl font-extrabold text-slate-800 dark:text-white tracking-tight drop-shadow-sm">
+              Transaksi Baru
+            </h3>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Catat aliran dana Anda</p>
+          </div>
 
-          {/* 2. MODAL CONTAINER (Wadah Utama) */}
-          <div
-            className="relative w-full max-w-lg flex flex-col max-h-[90vh] shadow-2xl animate-pop-in overflow-hidden ring-1 ring-white/20"
-            style={{
-              borderRadius: '40px',          // Radius Lengkungan Besar
-              background: 'rgba(255, 255, 255, 0.75)', // Agak lebih transparan
-              backdropFilter: 'blur(24px)',  // Blur kaca yang dalam
-              WebkitBackdropFilter: 'blur(24px)',
+          {/* Area Form */}
+          <div className="p-6 pt-4">
+            <form onSubmit={handleAddSubmit} className="space-y-6">
 
-              /* --- JURUS ANTI KOTAK --- */
-              isolation: 'isolate',          // Mencegah blur bocor ke layer lain
-              transform: 'translateZ(0)',    // Memaksa GPU merender lengkungan dengan presisi
-              border: '1px solid rgba(255, 255, 255, 0.4)'
-            }}
-          >
-            {/* Dark Mode Support */}
-            <div className="absolute inset-0 bg-transparent dark:bg-slate-900/85 pointer-events-none -z-10 mix-blend-multiply dark:mix-blend-normal"></div>
+              {/* Toggle Type - Style Pill */}
+              <div className="flex p-1.5 bg-slate-100/80 dark:bg-slate-950/50 rounded-[30px] border border-slate-200 dark:border-slate-800 backdrop-blur-sm">
+                {(['INCOME', 'EXPENSE', 'TRANSFER'] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setType(t)}
+                    className={`flex-1 py-3 rounded-[24px] text-[10px] sm:text-xs font-extrabold tracking-wide transition-all duration-300 ${type === t
+                      ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-lg scale-100 ring-1 ring-black/5 dark:ring-white/10'
+                      : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                      }`}
+                  >
+                    {t === 'INCOME' ? 'MASUK' : t === 'EXPENSE' ? 'KELUAR' : 'TRANSFER'}
+                  </button>
+                ))}
+              </div>
 
-            {/* Hiasan Header Gradient (Lebih Tipis) */}
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 z-30"></div>
-
-            {/* Header Judul */}
-            <div className="p-8 pb-2 shrink-0 relative z-20 text-center mt-2">
-              <h3 className="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight drop-shadow-sm">
-                Transaksi Baru
-              </h3>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Catat aliran dana Anda</p>
-            </div>
-
-            {/* Area Form Scrollable */}
-            <div className="p-8 pt-4 overflow-y-auto scrollbar-hide relative z-20">
-              <form onSubmit={handleAddSubmit} className="space-y-6">
-
-                {/* Toggle Type - Style Pill */}
-                <div className="flex p-1.5 bg-slate-100/80 dark:bg-slate-950/50 rounded-[30px] border border-slate-200 dark:border-slate-800 backdrop-blur-sm">
-                  {(['INCOME', 'EXPENSE', 'TRANSFER'] as const).map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setType(t)}
-                      className={`flex-1 py-3 rounded-[24px] text-[10px] sm:text-xs font-extrabold tracking-wide transition-all duration-300 ${type === t
-                        ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-lg scale-100 ring-1 ring-black/5 dark:ring-white/10'
-                        : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-                        }`}
-                    >
-                      {t === 'INCOME' ? 'MASUK' : t === 'EXPENSE' ? 'KELUAR' : 'TRANSFER'}
-                    </button>
-                  ))}
+              {/* Input Fields */}
+              <div className="space-y-5">
+                {/* Pilih Dompet */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Dompet Sumber</label>
+                  <div className="relative group">
+                    <select value={walletId} onChange={(e) => setWalletId(e.target.value)} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-700 dark:text-white appearance-none outline-none cursor-pointer hover:border-indigo-300/50">
+                      {wallets.map(w => <option key={w.id} value={w.id}>{w.name} ({formatIDR(w.balance)})</option>)}
+                    </select>
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Input Fields */}
-                <div className="space-y-5">
-                  {/* Pilih Dompet */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Dompet Sumber</label>
+                {/* Jika Transfer */}
+                {type === 'TRANSFER' && (
+                  <div className="space-y-2 animate-fade-in-up">
+                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Ke Dompet</label>
                     <div className="relative group">
-                      <select value={walletId} onChange={(e) => setWalletId(e.target.value)} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-700 dark:text-white appearance-none outline-none cursor-pointer hover:border-indigo-300/50">
-                        {wallets.map(w => <option key={w.id} value={w.id}>{w.name} ({formatIDR(w.balance)})</option>)}
+                      <select value={toWalletId} onChange={(e) => setToWalletId(e.target.value)} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-700 dark:text-white appearance-none outline-none cursor-pointer hover:border-indigo-300/50">
+                        {wallets.filter(w => w.id !== walletId).map(w => <option key={w.id} value={w.id}>{w.name} ({formatIDR(w.balance)})</option>)}
                       </select>
                       <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                       </div>
                     </div>
                   </div>
+                )}
 
-                  {/* Jika Transfer */}
-                  {type === 'TRANSFER' && (
-                    <div className="space-y-2 animate-fade-in-up">
-                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Ke Dompet</label>
-                      <div className="relative group">
-                        <select value={toWalletId} onChange={(e) => setToWalletId(e.target.value)} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-700 dark:text-white appearance-none outline-none cursor-pointer hover:border-indigo-300/50">
-                          {wallets.filter(w => w.id !== walletId).map(w => <option key={w.id} value={w.id}>{w.name} ({formatIDR(w.balance)})</option>)}
-                        </select>
-                        <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Jumlah</label>
-                      <input type="text" required value={amount} onChange={handleAmountChange} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold text-slate-900 dark:text-white placeholder-slate-300 transition-all" placeholder="0" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Kategori</label>
-                      <div className="relative group">
-                        <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold text-slate-700 dark:text-white appearance-none cursor-pointer hover:border-indigo-300/50">
-                          {currentTypeCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                        </select>
-                        <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Jumlah</label>
+                    <input type="text" required value={amount} onChange={handleAmountChange} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold text-slate-900 dark:text-white placeholder-slate-300 transition-all" placeholder="0" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Kategori</label>
+                    <div className="relative group">
+                      <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold text-slate-700 dark:text-white appearance-none cursor-pointer hover:border-indigo-300/50">
+                        {currentTypeCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      </select>
+                      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                       </div>
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Deskripsi</label>
-                    <input type="text" required value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold text-slate-900 dark:text-white placeholder-slate-300 transition-all" placeholder="Cth: Makan Siang" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Tanggal</label>
-                    <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold text-slate-700 dark:text-white cursor-pointer transition-all" />
-                  </div>
                 </div>
 
-                {/* Footer Tombol */}
-                <div className="flex space-x-3 pt-6">
-                  <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-[30px] transition-colors">Batal</button>
-                  <button type="submit" className="flex-1 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-[30px] text-sm font-bold shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-95 transition-all">Simpan Transaksi</button>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Deskripsi</label>
+                  <input type="text" required value={description} onChange={(e) => setDescription(e.target.value)} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold text-slate-900 dark:text-white placeholder-slate-300 transition-all" placeholder="Cth: Makan Siang" />
                 </div>
 
-              </form>
-            </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-4">Tanggal</label>
+                  <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-6 py-4 border border-slate-200/80 dark:border-slate-700/50 rounded-[30px] text-sm bg-white/50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none font-bold text-slate-700 dark:text-white cursor-pointer transition-all" />
+                </div>
+              </div>
+
+              {/* Footer Tombol */}
+              <div className="flex space-x-3 pt-6">
+                <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-4 text-sm font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-[30px] transition-colors">Batal</button>
+                <button type="submit" className="flex-1 py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-[30px] text-sm font-bold shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-95 transition-all">Simpan Transaksi</button>
+              </div>
+
+            </form>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };
