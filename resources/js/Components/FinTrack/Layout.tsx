@@ -5,7 +5,7 @@ import {
   User as UserIcon, Settings, FileDown, Bell, HelpCircle, Check, AlertTriangle, Info, CheckCircle,
   PlusCircle, Home // Tambahan Icon
 } from 'lucide-react';
-import { AppView, User, Notification } from '@/types';
+import { AppView, User, AppNotification } from '@/types';
 import toast from 'react-hot-toast';
 
 interface LayoutProps {
@@ -16,7 +16,7 @@ interface LayoutProps {
   onLogout: () => void;
 }
 
-const MOCK_NOTIFICATIONS_HEADER: Notification[] = [
+const MOCK_NOTIFICATIONS_HEADER: AppNotification[] = [
   { id: '1', title: 'Tagihan Listrik', message: 'Tagihan Listrik jatuh tempo besok!', type: 'ALERT', date: new Date().toISOString(), isRead: false },
   { id: '2', title: 'Gaji Masuk', message: 'Gaji bulan Oktober sudah dicatat.', type: 'SUCCESS', date: new Date(Date.now() - 3600000).toISOString(), isRead: false },
   { id: '3', title: 'Peringatan Budget', message: 'Budget "Makan" sisa 10%.', type: 'WARNING', date: new Date(Date.now() - 7200000).toISOString(), isRead: false },
@@ -27,7 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children, 
   
   // Notification Logic
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS_HEADER);
+  const [notifications, setNotifications] = useState<AppNotification[]>(MOCK_NOTIFICATIONS_HEADER);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -94,14 +94,15 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children, 
     );
   };
 
-  const getNotifIcon = (type: Notification['type']) => {
-    switch (type) {
-      case 'WARNING': return <AlertTriangle className="w-4 h-4 text-amber-500" />;
-      case 'ALERT': return <AlertTriangle className="w-4 h-4 text-red-500" />; 
-      case 'SUCCESS': return <CheckCircle className="w-4 h-4 text-emerald-500" />;
-      default: return <Info className="w-4 h-4 text-blue-500" />;
-    }
-  };
+  const getNotifIcon = (type: AppNotification['type']) => {
+  switch (type) {
+    case 'WARNING': return <AlertTriangle className="w-4 h-4 text-amber-500" />;
+    case 'ALERT': return <AlertTriangle className="w-4 h-4 text-red-500" />; 
+    case 'ERROR': return <X className="w-4 h-4 text-red-600" />; // Tambahan untuk ERROR
+    case 'SUCCESS': return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+    default: return <Info className="w-4 h-4 text-blue-500" />;
+  }
+};
 
   return (
     <div className="flex h-screen bg-slate-50/50 dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-100 transition-colors duration-500">

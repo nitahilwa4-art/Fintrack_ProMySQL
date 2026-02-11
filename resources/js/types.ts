@@ -2,17 +2,18 @@
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 export type UserRole = 'ADMIN' | 'USER';
 export type WalletType = 'CASH' | 'BANK' | 'E-WALLET';
-
 export type BudgetFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 export type DebtType = 'BILL' | 'DEBT' | 'RECEIVABLE';
-
+// Sesuaikan AssetType dengan yang ada di AssetManager
+export type AssetType = 'GOLD' | 'STOCK' | 'CRYPTO' | 'PROPERTY' | 'OTHER';
+export type Notification = AppNotification;
 
 export enum AppView {
   DASHBOARD = 'DASHBOARD',
   TRANSACTIONS = 'TRANSACTIONS',
   SMART_ENTRY = 'SMART_ENTRY',
   INSIGHTS = 'INSIGHTS',
-  ADMIN_DASHBOARD = 'ADMIN_DASHBOARD', // Admin only
+  ADMIN_DASHBOARD = 'ADMIN_DASHBOARD',
   WALLETS = 'WALLETS',
   CATEGORIES = 'CATEGORIES',
   DEBTS = 'DEBTS',
@@ -22,22 +23,19 @@ export enum AppView {
   SETTINGS = 'SETTINGS',
   EXPORT = 'EXPORT',
   NOTIFICATIONS = 'NOTIFICATIONS',
-  HELP = 'HELP',
-  ADMIN = 'ADMIN' // Alias for ADMIN_DASHBOARD if needed
+  HELP = 'HELP'
 }
-
-// --- CORE INTERFACES ---
 
 export interface Transaction {
   id: string;
   userId: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   description: string;
   amount: number;
   type: TransactionType;
   category: string;
   walletId: string;
-  toWalletId?: string; // khusus TRANSFER
+  toWalletId?: string;
 }
 
 export interface SummaryStats {
@@ -46,52 +44,21 @@ export interface SummaryStats {
   balance: number;
 }
 
-// --- USER & AUTH ---
-
-export interface UserPreferences {
-  theme: 'light' | 'dark';
-  currency: 'IDR' | 'USD' | 'EUR';
-  notifications: boolean;
-}
-
-export interface FinancialGoal {
-  id: string;
-  name: string;
-  amount: number;
-  currentAmount?: number;
-  deadline: string; // YYYY-MM-DD
-}
-
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   avatar?: string;
-  preferences?: UserPreferences;
-  goals?: FinancialGoal[];
-}
-
-// Alias agar kompatibel dengan kode FinanceApp.tsx
-export type UserProfile = User;
-export type Goal = FinancialGoal;
-
-// --- FEATURES ---
-
-export interface CategoryBudget {
-  id: string;                 // <-- tambah, dipakai di FinanceApp
-  userId?: string;            // opsional (biar kompatibel saat nanti pakai auth)
-  category: string;
-  limit: number;
-  spent: number;
-  period: 'MONTHLY' | 'WEEKLY';
+  password?: string;
 }
 
 export interface Asset {
   id: string;
+  userId: string;
   name: string;
   value: number;
-  type: 'PROPERTY' | 'VEHICLE' | 'INVESTMENT' | 'CASH' | 'OTHER';
+  type: AssetType; // Gunakan AssetType yang sudah diupdate
   purchaseDate?: string;
 }
 
@@ -100,35 +67,12 @@ export interface Debt {
   userId: string;
   person: string;
   amount: number;
-  remainingAmount?: number; // Added to track remaining debt
-  dueDate: string; // YYYY-MM-DD
+  remainingAmount?: number;
+  dueDate: string;
   description?: string;
   type: DebtType;
   isPaid: boolean;
 }
-
-export interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  date: string;
-  read: boolean;
-  type: 'INFO' | 'WARNING' | 'SUCCESS' | 'ERROR';
-}
-
-// --- CONSTANTS ---
-
-export const CATEGORIES = {
-  INCOME: ['Gaji', 'Bonus', 'Investasi', 'Lainnya'],
-  EXPENSE: ['Makanan', 'Transportasi', 'Belanja', 'Tagihan', 'Hiburan', 'Kesehatan', 'Pendidikan', 'Lainnya']
-};
-
-export const INITIAL_CATEGORIES = [
-  { name: 'Gaji', type: 'INCOME' },
-  { name: 'Makanan', type: 'EXPENSE' },
-  { name: 'Transportasi', type: 'EXPENSE' },
-  { name: 'Belanja', type: 'EXPENSE' },
-];
 
 export interface Wallet {
   id: string;
@@ -143,38 +87,34 @@ export interface Category {
   userId: string;
   name: string;
   type: 'INCOME' | 'EXPENSE';
-  limit?: number; // Opsional (untuk budget)
   isDefault?: boolean;
 }
 
-export interface AdminLog {
-  id: string;
-  timestamp: string; // ISO String
-  adminId: string;
-  action: string;
-  target: string;
-  details: string;
-}
-
+// SATUKAN DEFINISI BUDGET (Hapus CategoryBudget)
 export interface Budget {
   id: string;
   userId: string;
   category: string;
   limit: number;
-  period: string; // contoh: "2026-02" (YYYY-MM)
+  spent: number;
+  period: string;
   frequency: BudgetFrequency;
 }
 
 import { AxiosInstance } from 'axios';
-// PERBAIKAN: Import spesifik 'route' dan 'Config'
 import { route as routeFn, Config } from 'ziggy-js'; 
 
 declare global {
-    interface Window {
-        axios: AxiosInstance;
-    }
-
-    // Definisikan tipe route secara global
+    interface Window { axios: AxiosInstance; }
     var route: typeof routeFn;
     var Ziggy: Config;
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  isRead: boolean; // Disamakan dengan penggunaan di Layout
+  type: 'INFO' | 'WARNING' | 'SUCCESS' | 'ERROR' | 'ALERT'; // Tambahkan ALERT
 }
