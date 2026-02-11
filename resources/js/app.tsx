@@ -10,14 +10,15 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => {
-        // CARI DUA-DUANYA (.jsx dan .tsx)
+        // 1. Cari semua file .jsx DAN .tsx
         const pages = import.meta.glob('./Pages/**/*.{jsx,tsx}');
 
-        // Cek prioritas: Kalau ada .tsx pakai itu, kalau gak ada pakai .jsxnpm
+        // 2. Cek apakah file .tsx ada? Kalau tidak, pakai .jsx
         const path = pages[`./Pages/${name}.tsx`]
             ? `./Pages/${name}.tsx`
             : `./Pages/${name}.jsx`;
 
+        // 3. Muat halaman yang ketemu
         return resolvePageComponent(path, pages);
     },
     setup({ el, App, props }) {
