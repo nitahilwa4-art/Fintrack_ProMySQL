@@ -66,7 +66,7 @@ const FinanceApp: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [wallets, setWallets] = useState<Wallet[]>(DEFAULT_WALLETS);
-  const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
@@ -259,16 +259,14 @@ const FinanceApp: React.FC = () => {
         );
       case AppView.TRANSACTIONS:
         return (
-              <TransactionList 
-                transactions={transactions} 
-                wallets={wallets}           // <-- Tambahkan ini
-                categories={categories}     // <-- Tambahkan ini
-                onDelete={(id) => setTransactions(prev => prev.filter(t => t.id !== id))} 
-                onEdit={(updatedTrans) => { // <-- Tambahkan ini agar fungsi edit jalan
-                  setTransactions(prev => prev.map(t => t.id === updatedTrans.id ? updatedTrans : t));
-                }}
-              />
-            );
+                <TransactionList 
+                  transactions={transactions} 
+                  wallets={wallets} 
+                  categories={categories} 
+                  onDelete={(id) => setTransactions(prev => prev.filter(t => t.id !== id))} 
+                  onEdit={(updatedTrans) => setTransactions(prev => prev.map(t => t.id === updatedTrans.id ? updatedTrans : t))}
+                />
+              );
       case AppView.SMART_ENTRY:
         return <SmartEntry onAddTransactions={addSmartTransactions} onDone={() => setCurrentView(AppView.TRANSACTIONS)} />;
       case AppView.INSIGHTS:
@@ -302,16 +300,25 @@ const FinanceApp: React.FC = () => {
           />
         );
       case AppView.ASSETS:
-        return <AssetManager assets={assets} onUpdateAssets={setAssets} />;
+        return (
+          <AssetManager 
+            assets={assets} 
+            onAdd={(a) => setAssets(prev => [...prev, a])} 
+            onDelete={(id) => setAssets(prev => prev.filter(a => a.id !== id))}
+            onEdit={(a) => setAssets(prev => prev.map(item => item.id === a.id ? a : item))}
+          />
+        );
       
-      case AppView.DEBTS: // Pastikan namanya sama dengan di AppView Enum
+      case AppView.DEBTS:
         return (
           <DebtManager 
             debts={debts} 
-            onAdd={handleAddDebt} 
-            onUpdate={handleUpdateDebt} 
-            onDelete={handleDeleteDebt} 
-          />);
+            onAdd={(d) => setDebts(prev => [...prev, d])} 
+            onEdit={(d) => setDebts(prev => prev.map(item => item.id === d.id ? d : item))}
+            onDelete={(id) => setDebts(prev => prev.filter(d => d.id !== id))}
+            onTogglePaid={(id) => setDebts(prev => prev.map(d => d.id === id ? {...d, isPaid: !d.isPaid} : d))}
+          />
+        );
       case AppView.PROFILE:
         return <Profile user={userProfile} onUpdateUser={setUserProfile} />;
       case AppView.SETTINGS:
