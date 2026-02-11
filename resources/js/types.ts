@@ -164,3 +164,17 @@ export interface Budget {
   period: string; // contoh: "2026-02" (YYYY-MM)
   frequency: BudgetFrequency;
 }
+
+import { AxiosInstance } from 'axios';
+// PERBAIKAN: Import spesifik 'route' dan 'Config'
+import { route as routeFn, Config } from 'ziggy-js'; 
+
+declare global {
+    interface Window {
+        axios: AxiosInstance;
+    }
+
+    // Definisikan tipe route secara global
+    var route: typeof routeFn;
+    var Ziggy: Config;
+}
