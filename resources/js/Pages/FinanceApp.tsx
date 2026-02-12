@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head, usePage } from '@inertiajs/react'; // <--- PERBAIKAN 1: Tambah usePage
+import { Head, usePage, router } from '@inertiajs/react'; // <--- Tambah 'router'
 import WalletManager from '@/Components/FinTrack/WalletManager';
 import CategoryManager from '@/Components/FinTrack/CategoryManager';
 import NotificationCenter from '@/Components/FinTrack/NotificationCenter';
@@ -157,11 +157,8 @@ const FinanceApp: React.FC = () => {
   };
 
   const handleLogout = () => {
-    // Redirect ke route logout Laravel jika perlu, atau cukup reset state
-    // window.location.href = route('logout'); 
-    setIsAuthenticated(false);
-    setUserProfile(null);
-    setCurrentView(AppView.DASHBOARD);
+    // Meminta Laravel untuk mematikan sesi (Logout Server)
+    router.post(route('logout'));
   };
 
   const stats: SummaryStats = {
