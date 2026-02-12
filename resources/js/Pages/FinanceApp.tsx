@@ -26,7 +26,7 @@ import TransactionList from '@/Components/FinTrack/TransactionList';
 import SmartEntry from '@/Components/FinTrack/SmartEntry';
 import FinancialInsights from '@/Components/FinTrack/FinancialInsights';
 import BudgetManager from '@/Components/FinTrack/BudgetManager';
-import Auth from '@/Components/FinTrack/Auth';
+
 import Settings from '@/Components/FinTrack/Settings';
 import ExportPage from '@/Components/FinTrack/ExportPage';
 import Profile from '@/Components/FinTrack/Profile';
@@ -367,7 +367,6 @@ const FinanceApp: React.FC = () => {
   };
 
   // --- MAIN RENDER ---
-  // PERBAIKAN 7: Logika Render Final - Jika user ada, tampilkan Layout
   if (auth.user || isAuthenticated) {
     return (
       <>
@@ -384,14 +383,23 @@ const FinanceApp: React.FC = () => {
     );
   }
 
-  // Fallback terakhir: Hanya tampilkan Auth jika benar-benar tidak ada data user dari server
+  // GANTI BAGIAN 'return null' DENGAN INI:
   return (
-    <>
-       <Head title="Masuk - FinTrack Pro" />
-       {/* Kita render Auth, tapi harusnya AuthController Laravel sudah mencegah ini */}
-       <Auth onLogin={handleLogin} /> 
-    </>
+    <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+      <div className="text-center p-8 bg-white shadow-lg rounded-xl">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Sesi Tidak Ditemukan</h1>
+        <p className="text-gray-500 mb-6">Anda sepertinya belum login atau sesi telah berakhir.</p>
+        
+        {/* Tombol Paksa ke Halaman Login */}
+        <a 
+          href="/login" 
+          className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10"
+        >
+          Masuk Sekarang
+        </a>
+      </div>
+    </div>
   );
-};
+}; // <--- Tutup kurung FinanceApp
 
 export default FinanceApp;
