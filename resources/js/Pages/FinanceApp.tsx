@@ -156,9 +156,16 @@ const FinanceApp: React.FC = () => {
     setCurrentView(AppView.DASHBOARD);
   };
 
-  const handleLogout = () => {
-    // Meminta Laravel untuk mematikan sesi (Logout Server)
-    router.post(route('logout'));
+  const handleLogout = (e?: any) => {
+    if (e) e.preventDefault();
+
+    router.post(route('logout'), {}, {
+      // Opsi "onFinish" jalan setelah server merespon (baik sukses maupun gagal)
+      onFinish: () => {
+        // Hapus paksa layar React dan reload browser ke halaman Login
+        window.location.href = '/login'; 
+      }
+    });
   };
 
   const stats: SummaryStats = {
