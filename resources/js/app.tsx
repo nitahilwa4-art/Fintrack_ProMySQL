@@ -9,16 +9,24 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => {
-        // Cari SEMUA file (.jsx dan .tsx)
+        // 1. Ambil daftar semua file yang tersedia
         const pages = import.meta.glob('./Pages/**/*.{jsx,tsx}');
         
-        // Prioritas: Cek .tsx dulu, kalau tidak ada baru .jsx
-        const path = pages[`./Pages/${name}.tsx`] 
-            ? `./Pages/${name}.tsx` 
-            : `./Pages/${name}.jsx`;
+        // 2. Tentukan path potensial
+        const tsxPath = `./Pages/${name}.tsx`;
+        const jsxPath = `./Pages/${name}.jsx`;
 
-        if (!path) throw new Error(`Halaman ${name} tidak ditemukan!`);
-        return resolvePageComponent(path, pages);
+        // 3. Cek path mana yang benar-benar ada di daftar 'pages'
+        if (pages[tsxPath]) {
+            return resolvePageComponent(tsxPath, pages);
+        }
+        
+        if (pages[jsxPath]) {
+            return resolvePageComponent(jsxPath, pages);
+        }
+
+        // 4. Jika tidak ada di keduanya, lempar error
+        throw new Error(`Halaman "${name}" tidak ditemukan di folder Pages! Cek nama file.`);
     },
     setup({ el, App, props }) {
         const root = createRoot(el);
