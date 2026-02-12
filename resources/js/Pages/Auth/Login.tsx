@@ -117,7 +117,7 @@ export default function Login({ status, canResetPassword }: { status?: string, c
                                 <Checkbox
                                     name="remember"
                                     checked={data.remember}
-                                    onChange={(e) => setData('remember', e.target.checked)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setData('remember', e.target.checked)}
                                     className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                                 />
                                 <span className="ms-2 text-sm text-slate-600">Ingat Saya</span>
