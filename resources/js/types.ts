@@ -4,9 +4,7 @@ export type UserRole = 'ADMIN' | 'USER';
 export type WalletType = 'CASH' | 'BANK' | 'E-WALLET';
 export type BudgetFrequency = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 export type DebtType = 'BILL' | 'DEBT' | 'RECEIVABLE';
-// Sesuaikan AssetType dengan yang ada di AssetManager
 export type AssetType = 'GOLD' | 'STOCK' | 'CRYPTO' | 'PROPERTY' | 'OTHER';
-export type Notification = AppNotification;
 
 export enum AppView {
   DASHBOARD = 'DASHBOARD',
@@ -26,6 +24,21 @@ export enum AppView {
   HELP = 'HELP'
 }
 
+// --- CONSTANTS (INI YANG TADI HILANG) ---
+export const CATEGORIES = {
+  INCOME: ['Gaji', 'Bonus', 'Investasi', 'Lainnya'],
+  EXPENSE: ['Makanan', 'Transportasi', 'Belanja', 'Tagihan', 'Hiburan', 'Kesehatan', 'Pendidikan', 'Lainnya']
+};
+
+export const INITIAL_CATEGORIES = [
+  { name: 'Gaji', type: 'INCOME' },
+  { name: 'Makanan', type: 'EXPENSE' },
+  { name: 'Transportasi', type: 'EXPENSE' },
+  { name: 'Belanja', type: 'EXPENSE' },
+];
+
+// --- CORE INTERFACES ---
+
 export interface Transaction {
   id: string;
   userId: string;
@@ -44,21 +57,45 @@ export interface SummaryStats {
   balance: number;
 }
 
+// --- USER & AUTH ---
+
+export interface UserPreferences {
+  theme: 'light' | 'dark';
+  currency: 'IDR' | 'USD' | 'EUR';
+  notifications: boolean;
+}
+
+export interface FinancialGoal {
+  id: string;
+  name: string;
+  amount: number;
+  currentAmount?: number;
+  deadline: string; 
+}
+
+// Alias untuk kompatibilitas
+export type Goal = FinancialGoal;
+export type UserProfile = User;
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   avatar?: string;
-  password?: string;
+  preferences?: UserPreferences; // Dikembalikan untuk Settings
+  goals?: FinancialGoal[];       // Dikembalikan untuk fitur Goals
+  password?: string;             // Ditambah untuk Mock Profile Update
 }
+
+// --- FEATURES ---
 
 export interface Asset {
   id: string;
   userId: string;
   name: string;
   value: number;
-  type: AssetType; // Gunakan AssetType yang sudah diupdate
+  type: AssetType; 
   purchaseDate?: string;
 }
 
@@ -73,6 +110,17 @@ export interface Debt {
   type: DebtType;
   isPaid: boolean;
 }
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  isRead: boolean;
+  type: 'INFO' | 'WARNING' | 'SUCCESS' | 'ERROR' | 'ALERT';
+}
+// Alias agar import Notification tidak error
+export type Notification = AppNotification;
 
 export interface Wallet {
   id: string;
@@ -90,6 +138,15 @@ export interface Category {
   isDefault?: boolean;
 }
 
+export interface AdminLog {
+  id: string;
+  timestamp: string;
+  adminId: string;
+  action: string;
+  target: string;
+  details: string;
+}
+
 // SATUKAN DEFINISI BUDGET (Hapus CategoryBudget)
 export interface Budget {
   id: string;
@@ -101,6 +158,7 @@ export interface Budget {
   frequency: BudgetFrequency;
 }
 
+// --- GLOBAL DEFINITIONS ---
 import { AxiosInstance } from 'axios';
 import { route as routeFn, Config } from 'ziggy-js'; 
 
@@ -108,13 +166,4 @@ declare global {
     interface Window { axios: AxiosInstance; }
     var route: typeof routeFn;
     var Ziggy: Config;
-}
-
-export interface AppNotification {
-  id: string;
-  title: string;
-  message: string;
-  date: string;
-  isRead: boolean; // Disamakan dengan penggunaan di Layout
-  type: 'INFO' | 'WARNING' | 'SUCCESS' | 'ERROR' | 'ALERT'; // Tambahkan ALERT
 }
