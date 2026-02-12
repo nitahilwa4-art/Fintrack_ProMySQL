@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Category, INITIAL_CATEGORIES } from '@/types';
+import type { Category } from '@/types';
+import { INITIAL_CATEGORIES } from '@/types';
 import { Database, Plus, Trash2, Tag, CreditCard, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
