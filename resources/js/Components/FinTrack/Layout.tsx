@@ -190,8 +190,8 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children, 
                      <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
                    </div>
                 </div>
-                <button onClick={onLogout} className="flex items-center justify-center w-full py-2.5 text-xs font-bold text-red-500 bg-white/80 dark:bg-slate-700/80 border border-red-100 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 rounded-xl transition-all shadow-sm active:scale-95">
-                  <LogOut className="w-3.5 h-3.5 mr-2" /> Sign Out
+                <button onMouseDown={onLogout} className="flex items-center justify-center w-full py-2.5 text-xs font-bold text-red-500 bg-white/80 dark:bg-slate-700/80 border border-red-100 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 rounded-xl transition-all shadow-sm active:scale-95">
+                        <LogOut className="w-3.5 h-3.5 mr-2" /> Sign Out
                 </button>
               </div>
             </div>
