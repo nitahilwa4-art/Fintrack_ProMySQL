@@ -21,7 +21,8 @@ export enum AppView {
   SETTINGS = 'SETTINGS',
   EXPORT = 'EXPORT',
   NOTIFICATIONS = 'NOTIFICATIONS',
-  HELP = 'HELP'
+  HELP = 'HELP',
+  ADMIN = 'ADMIN' // Alias for ADMIN_DASHBOARD if needed,
 }
 
 // --- CONSTANTS (INI YANG TADI HILANG) ---
@@ -49,6 +50,8 @@ export interface Transaction {
   category: string;
   walletId: string;
   toWalletId?: string;
+  isFlagged?: boolean; // <-- TAMBAHAN: Untuk fitur Admin Flagging
+  status?: 'PENDING' | 'COMPLETED' | 'FAILED'; // <-- TAMBAHAN: Status transaksi
 }
 
 export interface SummaryStats {
@@ -146,7 +149,7 @@ export interface AdminLog {
   target: string;
   details: string;
 }
-
+export type SystemLog = AdminLog;
 // SATUKAN DEFINISI BUDGET (Hapus CategoryBudget)
 export interface Budget {
   id: string;
