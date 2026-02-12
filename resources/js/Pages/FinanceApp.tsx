@@ -12,7 +12,7 @@ import {
   UserProfile, 
   Wallet,
   Category,
-  CategoryBudget, // Pastikan ini ada di types.ts atau ganti Budget
+  
   Goal, 
   Asset, 
   Debt,
@@ -55,6 +55,7 @@ interface PageProps {
     auth: {
         user: UserProfile;
     };
+    [key: string]: any; //
 }
 
 const FinanceApp: React.FC = () => {
@@ -185,8 +186,12 @@ const FinanceApp: React.FC = () => {
     }));
   };
 
-  const addSmartTransactions = (newTrans: Transaction[]) => {
-    setTransactions(prev => [...newTrans, ...prev]);
+  const addSmartTransactions = (newTrans: Omit<Transaction, 'userId'>[]) => {
+    const transactionsWithUser = newTrans.map(t => ({
+        ...t,
+        userId: userProfile?.id || 'guest'
+    } as Transaction));
+    setTransactions(prev => [...transactionsWithUser, ...prev]);
   };
 
   // --- BUDGET HANDLERS ---
@@ -333,8 +338,10 @@ const FinanceApp: React.FC = () => {
           />
         );
       case AppView.PROFILE:
+        if (!userProfile) return null;
         return <Profile user={userProfile} onUpdateUser={setUserProfile} />;
       case AppView.SETTINGS:
+        if (!userProfile) return null;
         return <Settings 
             user={userProfile!} 
             onUpdateUser={(updatedUser) => {
