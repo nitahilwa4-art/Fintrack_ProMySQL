@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
-import { v4 as uuidv4 } from 'uuid';
+import { Head, usePage } from '@inertiajs/react'; // <--- PERBAIKAN 1: Tambah usePage
 import WalletManager from '@/Components/FinTrack/WalletManager';
 import CategoryManager from '@/Components/FinTrack/CategoryManager';
 import NotificationCenter from '@/Components/FinTrack/NotificationCenter';
-
 
 // Import Types
 import { 
@@ -14,10 +12,11 @@ import {
   UserProfile, 
   Wallet,
   Category,
-  CategoryBudget,
+  CategoryBudget, // Pastikan ini ada di types.ts atau ganti Budget
   Goal, 
   Asset, 
-  Debt
+  Debt,
+  Budget // Gunakan Budget jika CategoryBudget tidak ada
 } from '@/types';
 
 // Import Components
@@ -51,10 +50,23 @@ const DEFAULT_CATEGORIES: Category[] = [
   { id: 'c5', userId: 'u1', name: 'Tagihan', type: 'EXPENSE', isDefault: true },
 ];
 
+// PERBAIKAN 2: Definisi Tipe Props dari Laravel
+interface PageProps {
+    auth: {
+        user: UserProfile;
+    };
+}
+
 const FinanceApp: React.FC = () => {
+  // PERBAIKAN 3: Ambil Data User Langsung dari Laravel
+  const { auth } = usePage<PageProps>().props;
+
   // --- STATE MANAGEMENT ---
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  
+  // PERBAIKAN 4: Inisialisasi status login berdasarkan data Laravel
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!auth.user);
+  
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [activeDateRange, setActiveDateRange] = useState({
@@ -63,32 +75,37 @@ const FinanceApp: React.FC = () => {
   });
   
   // Data States
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(auth.user || null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [wallets, setWallets] = useState<Wallet[]>(DEFAULT_WALLETS);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]); // Gunakan tipe Budget
   const [goals, setGoals] = useState<Goal[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+
+  // PERBAIKAN 5: Sync otomatis jika user login/logout
+  useEffect(() => {
+    if (auth.user) {
+        setUserProfile(auth.user);
+        setIsAuthenticated(true);
+    }
+  }, [auth.user]);
 
   // --- INITIALIZATION ---
   useEffect(() => {
     setTimeout(() => {
       try {
         if (typeof window !== 'undefined') {
-          const savedUser = localStorage.getItem('userProfile');
-          const savedAuth = localStorage.getItem('isAuthenticated');
+          // Kita abaikan localStorage userProfile karena sudah pakai auth.user dari Laravel
           const savedTheme = localStorage.getItem('theme');
 
-          if (savedUser) setUserProfile(JSON.parse(savedUser));
-          if (savedAuth === 'true') setIsAuthenticated(true);
           if (savedTheme === 'dark') {
             setIsDarkMode(true);
             document.documentElement.classList.add('dark');
           }
 
-          // Load Data
+          // Load Data Lainnya
           const savedTrans = localStorage.getItem('transactions');
           const savedWallets = localStorage.getItem('wallets');
           const savedBudgets = localStorage.getItem('budgets');
@@ -124,26 +141,25 @@ const FinanceApp: React.FC = () => {
     localStorage.setItem('debts', JSON.stringify(debts));
     localStorage.setItem('categories', JSON.stringify(categories));
     
-    if (userProfile) localStorage.setItem('userProfile', JSON.stringify(userProfile));
-    localStorage.setItem('isAuthenticated', String(isAuthenticated));
+    // Theme persistence
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-
     if (isDarkMode) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
-  }, [transactions, wallets, budgets, goals, assets, debts, categories, userProfile, isAuthenticated, isDarkMode, isLoading]);
+  }, [transactions, wallets, budgets, goals, assets, debts, categories, isDarkMode, isLoading]);
 
   // --- HANDLERS ---
   const handleLogin = (user: UserProfile) => {
+    // Fungsi ini hanya fallback, login utama via Laravel
     setUserProfile(user);
     setIsAuthenticated(true);
     setCurrentView(AppView.DASHBOARD);
   };
 
   const handleLogout = () => {
+    // Redirect ke route logout Laravel jika perlu, atau cukup reset state
+    // window.location.href = route('logout'); 
     setIsAuthenticated(false);
     setUserProfile(null);
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userProfile');
     setCurrentView(AppView.DASHBOARD);
   };
 
@@ -173,8 +189,8 @@ const FinanceApp: React.FC = () => {
     setTransactions(prev => [...newTrans, ...prev]);
   };
 
-// --- BUDGET HANDLERS (Baru Ditambahkan) ---
-  const handleAddBudget = (newBudget: CategoryBudget) => {
+  // --- BUDGET HANDLERS ---
+  const handleAddBudget = (newBudget: Budget) => { // Sesuaikan tipe ke Budget
     setBudgets(prev => [...prev, newBudget]);
   };
 
@@ -182,11 +198,11 @@ const FinanceApp: React.FC = () => {
     setBudgets(prev => prev.filter(b => b.id !== id));
   };
 
-  const handleEditBudget = (updatedBudget: CategoryBudget) => {
+  const handleEditBudget = (updatedBudget: Budget) => { // Sesuaikan tipe ke Budget
     setBudgets(prev => prev.map(b => b.id === updatedBudget.id ? updatedBudget : b));
   };
 
-  // --- WALLET HANDLERS (WAJIB ADA) ---
+  // --- WALLET HANDLERS ---
   const handleAddWallet = (newWallet: Wallet) => {
     setWallets(prev => [...prev, newWallet]);
   };
@@ -199,7 +215,7 @@ const FinanceApp: React.FC = () => {
     setWallets(prev => prev.filter(w => w.id !== id));
   };
 
-  // --- CATEGORY HANDLERS (LOGIKA KATEGORI) ---
+  // --- CATEGORY HANDLERS ---
   const handleAddCategory = (newCat: Category) => {
     setCategories(prev => [...prev, newCat]);
   };
@@ -210,7 +226,7 @@ const FinanceApp: React.FC = () => {
     setCategories(prev => prev.filter(c => c.id !== id));
   };
 
-  // --- DEBT HANDLERS (LOGIKA HUTANG) ---
+  // --- DEBT HANDLERS ---
   const handleAddDebt = (newDebt: Debt) => {
     setDebts(prev => [...prev, newDebt]);
   };
@@ -219,7 +235,10 @@ const FinanceApp: React.FC = () => {
   };
   const handleDeleteDebt = (id: string) => {
     setDebts(prev => prev.filter(d => d.id !== id));
-  }
+  };
+  const handleTogglePaidDebt = (id: string) => {
+      setDebts(prev => prev.map(d => d.id === id ? {...d, isPaid: !d.isPaid} : d));
+  };
 
   // --- RENDER CONTENT ---
   const renderContent = () => {
@@ -232,15 +251,12 @@ const FinanceApp: React.FC = () => {
       );
     }
 
-    // 2. Handle Not Logged In
-    if (!isAuthenticated) {
-      return <Auth onLogin={handleLogin} />;
-    }
+    // PERBAIKAN 6: Hapus pengecekan manual yang memblokir tampilan
+    // if (!isAuthenticated) { return <Auth ... /> } <--- INI SUDAH DIHAPUS
 
-    // 3. Routing Views
+    // 2. Routing Views
     switch (currentView) {
       case AppView.ADMIN_DASHBOARD:
-         // Admin Dashboard dirender DI DALAM Layout sekarang
          return <AdminDashboard allTransactions={transactions} onRefresh={() => {}} />;
          
       case AppView.DASHBOARD:
@@ -259,25 +275,25 @@ const FinanceApp: React.FC = () => {
         );
       case AppView.TRANSACTIONS:
         return (
-                <TransactionList 
-                  transactions={transactions} 
-                  wallets={wallets} 
-                  categories={categories} 
-                  onDelete={(id) => setTransactions(prev => prev.filter(t => t.id !== id))} 
-                  onEdit={(updatedTrans) => setTransactions(prev => prev.map(t => t.id === updatedTrans.id ? updatedTrans : t))}
-                />
-              );
+            <TransactionList 
+              transactions={transactions} 
+              wallets={wallets} 
+              categories={categories} 
+              onDelete={(id) => setTransactions(prev => prev.filter(t => t.id !== id))} 
+              onEdit={(updatedTrans) => setTransactions(prev => prev.map(t => t.id === updatedTrans.id ? updatedTrans : t))}
+            />
+        );
       case AppView.SMART_ENTRY:
         return <SmartEntry onAddTransactions={addSmartTransactions} onDone={() => setCurrentView(AppView.TRANSACTIONS)} />;
       case AppView.INSIGHTS:
         return <FinancialInsights transactions={transactions} />;
       case AppView.BUDGETS:
         return <BudgetManager 
-            budgets={budgets}            // Data budget
-            categories={categories}      // Data kategori (sekarang dikirim)
-            onAdd={handleAddBudget}      // Fungsi tambah
-            onDelete={handleDeleteBudget}// Fungsi hapus
-            onEdit={handleEditBudget}    // Fungsi edit
+            budgets={budgets}
+            categories={categories}
+            onAdd={handleAddBudget}
+            onDelete={handleDeleteBudget}
+            onEdit={handleEditBudget}
           />;
       case AppView.WALLETS:
         return (
@@ -288,8 +304,6 @@ const FinanceApp: React.FC = () => {
             onDelete={handleDeleteWallet} 
           />
         );
-
-      // --- TAMPILKAN KATEGORI ---
       case AppView.CATEGORIES:
         return (
           <CategoryManager 
@@ -308,7 +322,6 @@ const FinanceApp: React.FC = () => {
             onEdit={(a) => setAssets(prev => prev.map(item => item.id === a.id ? a : item))}
           />
         );
-      
       case AppView.DEBTS:
         return (
           <DebtManager 
@@ -316,17 +329,16 @@ const FinanceApp: React.FC = () => {
             onAdd={(d) => setDebts(prev => [...prev, d])} 
             onEdit={(d) => setDebts(prev => prev.map(item => item.id === d.id ? d : item))}
             onDelete={(id) => setDebts(prev => prev.filter(d => d.id !== id))}
-            onTogglePaid={(id) => setDebts(prev => prev.map(d => d.id === id ? {...d, isPaid: !d.isPaid} : d))}
+            onTogglePaid={handleTogglePaidDebt}
           />
         );
       case AppView.PROFILE:
         return <Profile user={userProfile} onUpdateUser={setUserProfile} />;
       case AppView.SETTINGS:
         return <Settings 
-            user={userProfile!} // Mengirim data user lengkap (bukan cuma isDarkMode)
+            user={userProfile!} 
             onUpdateUser={(updatedUser) => {
               setUserProfile(updatedUser);
-              // Logic update tema langsung di sini
               if(updatedUser.preferences?.theme === 'dark') {
                 setIsDarkMode(true);
                 document.documentElement.classList.add('dark');
@@ -347,8 +359,9 @@ const FinanceApp: React.FC = () => {
     }
   };
 
-  // --- MAIN RENDER (PERBAIKAN: Semua User (termasuk Admin) dapat Layout) ---
-  if (isAuthenticated && !isLoading) {
+  // --- MAIN RENDER ---
+  // PERBAIKAN 7: Logika Render Final - Jika user ada, tampilkan Layout
+  if (auth.user || isAuthenticated) {
     return (
       <>
         <Head title="FinTrack Pro" />
@@ -364,11 +377,12 @@ const FinanceApp: React.FC = () => {
     );
   }
 
-  // Fallback (Login / Loading)
+  // Fallback terakhir: Hanya tampilkan Auth jika benar-benar tidak ada data user dari server
   return (
     <>
-       <Head title="FinTrack Pro" />
-       {renderContent()}
+       <Head title="Masuk - FinTrack Pro" />
+       {/* Kita render Auth, tapi harusnya AuthController Laravel sudah mencegah ini */}
+       <Auth onLogin={handleLogin} /> 
     </>
   );
 };
